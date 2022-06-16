@@ -1,0 +1,14 @@
+# API
+fastapi
+uvicorn
+pydantic[email]
+
+# DB
+motor
+dnspython
+python-multipart
+
+
+# Dev
+pip-tools
+black
