@@ -1,4 +1,30 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import uvicorn
+
 from config import settings
 
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Frontend Static Files Mounted - No Additional Frontend Server Required
+# ui endpoint for build directory
+app.mount("/ui", StaticFiles(directory="frontend", html=True), name="ui")
+# static endpoint for ./build/static directory
+app.mount("/static", StaticFiles(directory="./frontend/static"), name="static")
+
 if __name__ == "__main__":
-    print(f"Hello World! - {settings.APP_NAME}")
+    uvicorn.run(
+        "main:app",
+        host=settings.HOST,
+        reload=settings.DEBUG_MODE,
+        port=settings.PORT,
+    )
