@@ -2,6 +2,7 @@
 fastapi
 uvicorn
 pydantic[email]
+jinja2
 
 # DB
 motor
