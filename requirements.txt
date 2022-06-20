@@ -9,6 +9,9 @@ motor
 dnspython
 python-multipart
 
+# Security
+python-jose[cryptography]
+passlib[bcrypt]
 
 # Dev
 pip-tools
