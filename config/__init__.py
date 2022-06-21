@@ -15,8 +15,8 @@ class ServerSettings(BaseSettings):
   ]
 
 class DatabaseSettings(BaseSettings):
-  # CLUSTER_URL: str = "mongodb://localhost:27017/"
-  CLUSTER_URL: str = "mongodb+srv://amrorg333:amrorg333@test-cluster0.ue7ubri.mongodb.net/test"
+  CLUSTER_URL: str = "mongodb://localhost:27017/"
+  # CLUSTER_URL: str = "mongodb+srv://amrorg333:amrorg333@test-cluster0.ue7ubri.mongodb.net/test"
   DB_PREFIX: str = "db_mp_"
   COL_PREFIX: str = "col_mp_"
 

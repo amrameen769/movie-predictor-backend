@@ -16,16 +16,15 @@ class User(BaseModel):
     schema_extra = {
       "example": {
         "username": "janedoe",
-        "email": "janedoe@example.com",
+        "email": "janedoe@amr.com",
         "password": "janedoe@123"
       }
     }
   
 class UserResponse(BaseModel):
-  id: PyObjectId
+  id: str = Field(alias="_id")
   username: str
   email: str
 
   class Config():
     orm_mode = True
-

@@ -21,6 +21,13 @@ app.mount("/ui", StaticFiles(directory="frontend", html=True), name="ui")
 # static endpoint for ./build/static directory
 app.mount("/static", StaticFiles(directory="./frontend/static"), name="static")
 
+# Routes
+from user.router import router as user_router
+from auth.router import router as auth_router
+
+app.include_router(user_router)
+app.include_router(auth_router)
+
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
