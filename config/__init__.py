@@ -15,7 +15,7 @@ class ServerSettings(BaseSettings):
   ]
 
 class DatabaseSettings(BaseSettings):
-  CLUSTER_URL: str = "mongodb://192.168.1.69:27017/" # added remote host
+  CLUSTER_URL: str = "mongodb://192.168.1.66:27017/" # added remote host
   # CLUSTER_URL: str = "mongodb://localhost:27017/"
   # CLUSTER_URL: str = "mongodb+srv://amrorg333:amrorg333@test-cluster0.ue7ubri.mongodb.net/test"
   DB_PREFIX: str = "db_mp_"
