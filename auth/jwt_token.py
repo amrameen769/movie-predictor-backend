@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
+
 from fastapi import Depends, status, HTTPException
-from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import jwt, JWTError
+
 import auth.repository as AuthRepository
 from auth.schema import TokenData
-
 
 SECRET_KEY = "bd4c8f9a8b77a109679175ba7e84c4c76919d312319e0a49fada13c0e003381c"
 ALGORITHM = "HS256"

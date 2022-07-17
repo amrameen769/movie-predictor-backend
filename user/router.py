@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Body, Depends, Request, status
+from fastapi import APIRouter, Body, Depends, status
 from fastapi.encoders import jsonable_encoder
-from auth.jwt_token import get_current_user
-import user.repository as UserRepository
 
+import user.repository as UserRepository
 import user.schema as UserSchema
+from auth.jwt_token import get_current_user
 
 router = APIRouter(prefix="/user", tags=["User"])
 
@@ -18,5 +18,5 @@ async def create(user: UserSchema.User = Body(...)):
 
 
 @router.get("/me", status_code=status.HTTP_200_OK, response_model=UserSchema.UserResponse)
-async def get_me(current_user: UserSchema.UserResponse = Depends(get_current_user) ):
+async def get_me(current_user: UserSchema.UserResponse = Depends(get_current_user)):
     return current_user
