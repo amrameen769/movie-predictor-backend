@@ -1,10 +1,8 @@
-from fastapi import Depends, HTTPException, status
-from database import MotorDB
-from hasher import Hasher
-import auth.schema as AuthSchema
-import auth.jwt_token as jwt_token
+from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
+from database import MotorDB
+from hasher import Hasher
 
 motor = MotorDB()
 hasher = Hasher()
@@ -19,12 +17,13 @@ async def login(user: OAuth2PasswordRequestForm):
     )
 
     if not auth_user:
-      raise HTTPException(
+        raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found.",
         )
 
     return auth_user if hasher.verify_password(user.password, auth_user["password"]) else None
+
 
 async def get_user(username: str):
     await motor.connect_db(db_name="movie_predictor")
