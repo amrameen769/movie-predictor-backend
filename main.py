@@ -24,9 +24,11 @@ app.mount("/static", StaticFiles(directory="./frontend/static"), name="static")
 # Routes
 from user.router import router as user_router
 from auth.router import router as auth_router
+from ai.router import router as ai_router
 
 app.include_router(user_router)
 app.include_router(auth_router)
+app.include_router(ai_router)
 
 if __name__ == "__main__":
     uvicorn.run(
