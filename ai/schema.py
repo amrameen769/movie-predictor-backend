@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 
 from bson import ObjectId
 from pydantic import BaseModel, Field
@@ -22,5 +22,26 @@ class Movie(BaseModel):
                 "movieId": "111",
                 "title": "Movie Title 1",
                 "genres": ["a", "b", "c"]
+            }
+        }
+
+class Rating(BaseModel):
+    id: str = Field(alias='_id')
+    userId: str = Field(...)
+    movieId: str = Field(...)
+    rating: str = Field(...)
+    timestamp: str = Field(...)
+
+    class Config:
+        allow_population_by_field_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
+        schema_extra = {
+            "example": {
+                "userId" :"1",
+                "movieId" : "1",
+                "rating" :"1.0",
+                "timestamp" : "111111111"
             }
         }

@@ -21,3 +21,19 @@ async def add_movie(movie: AISchema.Movie):
             created_movie = await movie_col.find_one({"_id": new_movie.inserted_id})
 
             return created_movie
+
+async def add_rating(rating: AISchema.Rating):
+    await motor.connect_db(db_name="movie_predictor")
+    rating_col = await motor.get_collection(col_name="rating")
+
+    if rating_col is not None:
+        new_rating = await rating_col.insert_one(rating)
+        if not new_rating:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Rating creation failed"
+            )
+        else:
+            created_rating = await rating_col.find_one({"_id": new_rating.inserted_id})
+
+            return created_rating
