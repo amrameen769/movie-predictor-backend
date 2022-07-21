@@ -13,3 +13,7 @@ async def add_movie(movie: AISchema.Movie = Body(...)):
 @router.post("/add-rating", status_code=status.HTTP_200_OK)
 async def add_rating(rating: AISchema.Rating = Body(...)):
     return await AIRepository.add_rating(jsonable_encoder(rating))
+
+@router.get("/get-rating", status_code=status.HTTP_200_OK)
+async def get_all_rating():
+    return await AIRepository.get_all_rating()

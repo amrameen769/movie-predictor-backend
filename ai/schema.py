@@ -26,7 +26,7 @@ class Movie(BaseModel):
         }
 
 class Rating(BaseModel):
-    id: str = Field(alias='_id')
+    id: int = Field(alias='_id')
     userId: str = Field(...)
     movieId: str = Field(...)
     rating: str = Field(...)

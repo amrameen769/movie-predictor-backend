@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 
 import ai.schema as AISchema
 from database import MotorDB
+import pandas as pd
 
 motor = MotorDB()
 
@@ -35,5 +36,22 @@ async def add_rating(rating: AISchema.Rating):
             )
         else:
             created_rating = await rating_col.find_one({"_id": new_rating.inserted_id})
-
             return created_rating
+
+async def to_df(list_of_docs):
+    df = pd.json_normalize(list_of_docs)
+    df.drop(['_id'], axis=1, inplace=True)
+    return df
+
+async def get_all_rating():
+    await motor.connect_db(db_name="movie_predictor")
+    rating_col = await motor.get_collection(col_name="rating")
+
+    size = await rating_col.count_documents({})
+
+    ratingset = []
+    cursor = rating_col.find({})
+    for doc in await cursor.to_list(size):
+        ratingset.append(doc)
+    df = await to_df(ratingset)
+    return df
