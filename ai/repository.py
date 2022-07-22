@@ -44,6 +44,8 @@ async def to_df(list_of_docs):
     return df
 
 async def get_all_rating():
+    from surprise import Reader, Dataset
+
     await motor.connect_db(db_name="movie_predictor")
     rating_col = await motor.get_collection(col_name="rating")
 
@@ -54,4 +56,22 @@ async def get_all_rating():
     for doc in await cursor.to_list(size):
         ratingset.append(doc)
     df = await to_df(ratingset)
-    return df
+
+    reader = Reader(rating_scale=(1,5))
+    dataset = Dataset.load_from_df(df[["userId", "movieId", "rating"]], reader=reader)
+    return(dataset)
+
+def load_model(model_filename):
+    from surprise import dump
+    import os
+    file_name = os.path.expanduser(model_filename)
+    _, loaded_model = dump.load(file_name)
+    return loaded_model
+
+async def movieid_to_name(movieID):
+    await motor.connect_db(db_name="movie_predictor")
+    movie_col = await motor.get_collection(col_name="movie")
+
+    cursor = movie_col.find({ "movieId" : str(movieID)})
+    for doc in await cursor.to_list(10):
+        return doc["title"]
