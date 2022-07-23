@@ -35,6 +35,10 @@ import ai.repository as ai_repository
 
 
 @app.on_event("startup")
+async def KNNBasicModel():
+    await ai_repository.KNNBasicModel()
+
+
 @repeat_every(seconds=30 * 24 * 60 * 60)
 async def KNNBasicModel():
     await ai_repository.KNNBasicModel()

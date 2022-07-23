@@ -16,5 +16,5 @@ async def add_rating(rating: AISchema.Rating = Body(...)):
     return await AIRepository.add_rating(jsonable_encoder(rating))
 
 @router.get("/recommend", status_code=status.HTTP_200_OK)
-async def collab_recommend(user_id=2):
+async def collab_recommend(user_id: int):
     return await AIRepository.collab_recommend(user_id)
