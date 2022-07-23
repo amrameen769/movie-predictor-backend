@@ -3,6 +3,7 @@ from fastapi.encoders import jsonable_encoder
 import ai.schema as AISchema
 import ai.repository as AIRepository
 
+
 router = APIRouter(prefix="/ai", tags=["ai"])
 
 
@@ -13,10 +14,6 @@ async def add_movie(movie: AISchema.Movie = Body(...)):
 @router.post("/add-rating", status_code=status.HTTP_200_OK)
 async def add_rating(rating: AISchema.Rating = Body(...)):
     return await AIRepository.add_rating(jsonable_encoder(rating))
-
-@router.get("/knn-basicmodel", status_code=status.HTTP_200_OK)
-async def KNNBasicModel():
-    await AIRepository.KNNBasicModel()
 
 @router.get("/recommend", status_code=status.HTTP_200_OK)
 async def collab_recommend(user_id=2):

@@ -1,5 +1,4 @@
 from fastapi import HTTPException, status
-from sympy import CoercionFailed
 
 import ai.schema as AISchema
 from database import MotorDB
@@ -80,6 +79,8 @@ async def movieid_to_name(movieID):
     cursor = movie_col.find({ "movieId" : str(movieID)})
     for doc in await cursor.to_list(10):
         return doc["title"]
+
+
 
 async def KNNBasicModel():
     from surprise import KNNBasic

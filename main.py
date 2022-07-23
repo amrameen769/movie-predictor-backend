@@ -2,6 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi_utils.tasks import repeat_every
 
 from config import settings
 
@@ -29,6 +30,13 @@ from ai.router import router as ai_router
 app.include_router(user_router)
 app.include_router(auth_router)
 app.include_router(ai_router)
+
+import ai.repository as ai_repository
+
+@app.on_event("startup")
+@repeat_every(seconds=30*24*60*60)
+async def KNNBasicModel():
+    await ai_repository.KNNBasicModel()
 
 if __name__ == "__main__":
     uvicorn.run(
