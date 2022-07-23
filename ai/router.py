@@ -13,3 +13,11 @@ async def add_movie(movie: AISchema.Movie = Body(...)):
 @router.post("/add-rating", status_code=status.HTTP_200_OK)
 async def add_rating(rating: AISchema.Rating = Body(...)):
     return await AIRepository.add_rating(jsonable_encoder(rating))
+
+@router.get("/knn-basicmodel", status_code=status.HTTP_200_OK)
+async def KNNBasicModel():
+    await AIRepository.KNNBasicModel()
+
+@router.get("/recommend", status_code=status.HTTP_200_OK)
+async def collab_recommend(user_id=2):
+    return await AIRepository.collab_recommend(user_id)

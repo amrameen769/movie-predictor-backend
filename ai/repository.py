@@ -1,8 +1,9 @@
 from fastapi import HTTPException, status
+from sympy import CoercionFailed
 
 import ai.schema as AISchema
 from database import MotorDB
-import pandas as pd
+
 
 motor = MotorDB()
 
@@ -39,12 +40,14 @@ async def add_rating(rating: AISchema.Rating):
             return created_rating
 
 async def to_df(list_of_docs):
+    import pandas as pd
     df = pd.json_normalize(list_of_docs)
     df.drop(['_id'], axis=1, inplace=True)
     return df
 
 async def get_all_rating():
     from surprise import Reader, Dataset
+    from pandas import to_numeric
 
     await motor.connect_db(db_name="movie_predictor")
     rating_col = await motor.get_collection(col_name="rating")
@@ -56,12 +59,14 @@ async def get_all_rating():
     for doc in await cursor.to_list(size):
         ratingset.append(doc)
     df = await to_df(ratingset)
+    cols = df.columns
+    df[cols] = df[cols].apply(to_numeric, errors="coerce")
 
     reader = Reader(rating_scale=(1,5))
     dataset = Dataset.load_from_df(df[["userId", "movieId", "rating"]], reader=reader)
     return(dataset)
 
-def load_model(model_filename):
+async def load_model(model_filename):
     from surprise import dump
     import os
     file_name = os.path.expanduser(model_filename)
@@ -75,3 +80,65 @@ async def movieid_to_name(movieID):
     cursor = movie_col.find({ "movieId" : str(movieID)})
     for doc in await cursor.to_list(10):
         return doc["title"]
+
+async def KNNBasicModel():
+    from surprise import KNNBasic
+    from surprise import dump
+
+    dataset = await get_all_rating()
+    trainset = dataset.build_full_trainset()
+    dump.dump("./ai/models/trainset",algo=trainset)
+
+    #computing similarity matrix with K Nearest Neighbour algorithm and cosine similarity
+    #we are using item based collaborative filtering hence user_based should be false
+
+    algo = KNNBasic(sim_options={
+        'name':'cosine',
+        'user_based' : False
+    }).fit(trainset)
+
+    similarity_matrix = algo.compute_similarities()
+    dump.dump("./ai/models/KNNBasicModel",algo=similarity_matrix)
+
+async def collab_recommend(user_id):
+
+    import heapq
+    from collections import defaultdict
+    from operator import itemgetter
+
+    trainset = await load_model("./ai/models/trainset")
+    similarity_matrix = await load_model("./ai/models/KNNBasicModel")
+
+    #calculating by using 20 nearest neighbors
+    k = 20
+
+    #finding the top 20 rated movies by user
+    test_subject_IID = trainset.to_inner_uid(user_id)
+    test_subject_ratings = trainset.ur[test_subject_IID]
+    k_neighbours = heapq.nlargest(k, test_subject_ratings, key= lambda x: x[1])
+
+    #will thrwo keyerror if we use a normal dictionary since we cannot search with a non-existent key in a normal dict
+    #finding similarities of each element in k_neighbours and storing them by assigning each of them a score
+    #to improvde the accuracy of the score modifying the default score as score*(rating/5.0) 
+    candidates = defaultdict(float)
+
+    for itemID , rating in k_neighbours:
+        similarities = similarity_matrix[itemID]
+        for innerID, score in enumerate(similarities):
+            candidates[innerID] += score*(rating / 5.0)
+
+    watched = []
+    for itemID, rating in trainset.ur[test_subject_IID]:
+        watched.append(itemID)
+
+    recommendation = set()
+    position = 0
+
+
+    #candidates have a structure of innerid : score hence we need to sort candidates descending order of score
+    for itemID,_ in sorted(candidates.items(), key=itemgetter(1), reverse=True):
+        if not itemID in watched:
+            recommendation.add( await movieid_to_name(trainset.to_raw_iid(itemID)))
+            position+=1
+            if ( position > 10) : break
+    return recommendation
