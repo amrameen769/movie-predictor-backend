@@ -1,18 +1,19 @@
 # API
 fastapi
-uvicorn
-pydantic[email]
+uvicorn~=0.17.6
+pydantic[email]~=1.9.1
 jinja2
 
 # DB
-motor
+motor~=3.0.0
 dnspython
 python-multipart
 
 # Security
 python-jose[cryptography]
-passlib[bcrypt]
+passlib[bcrypt]~=1.7.4
 
 # Dev
 pip-tools
 black
+pymongo~=4.1.1
