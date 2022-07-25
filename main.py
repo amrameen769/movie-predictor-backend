@@ -34,15 +34,15 @@ app.include_router(ai_router)
 import ai.repository as ai_repository
 
 
-@app.on_event("startup")
-async def KNNBasicModel():
-    await ai_repository.KNNBasicModel()
-
-
-@repeat_every(seconds=30 * 24 * 60 * 60)
-async def KNNBasicModel():
-    await ai_repository.KNNBasicModel()
-
+# @app.on_event("startup")
+# async def KNNBasicModel():
+#     await ai_repository.KNNBasicModel()
+#
+#
+# @repeat_every(seconds=30 * 24 * 60 * 60)
+# async def KNNBasicModel():
+#     await ai_repository.KNNBasicModel()
+#
 
 if __name__ == "__main__":
     uvicorn.run(

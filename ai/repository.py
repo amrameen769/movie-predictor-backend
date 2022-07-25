@@ -1,17 +1,37 @@
 from fastapi import HTTPException, status
+from pydantic.typing import Optional
 
 import ai.schema as AISchema
 from database import MotorDB
 
-
 motor = MotorDB()
+
+
+async def get_movie(movie_id: Optional[str] = None, title: Optional[str] = None):
+    await motor.connect_db(db_name="movie_predictor")
+    movie_col = await motor.get_collection(col_name="movie")
+    movie = None
+
+    if movie_id is not None:
+        movie = await movie_col.find_one({"movieId": movie_id})
+        if movie is not None:
+            return movie
+
+    if title is not None:
+        movie = await movie_col.find_one({"title": title})
+        if movie is not None:
+            return movie
+
+    return None
 
 
 async def add_movie(movie: AISchema.Movie):
     await motor.connect_db(db_name="movie_predictor")
     movie_col = await motor.get_collection(col_name="movie")
 
-    if movie_col is not None:
+    movie_exist = await get_movie(movie_id=movie['movieId'], title=movie['title'])
+
+    if movie_col is not None and movie_exist is None:
         new_movie = await movie_col.insert_one(movie)
         if not new_movie:
             raise HTTPException(
@@ -22,6 +42,13 @@ async def add_movie(movie: AISchema.Movie):
             created_movie = await movie_col.find_one({"_id": new_movie.inserted_id})
 
             return created_movie
+
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Movie Already Exists"
+        )
+
 
 async def add_rating(rating: AISchema.Rating):
     await motor.connect_db(db_name="movie_predictor")
@@ -38,11 +65,13 @@ async def add_rating(rating: AISchema.Rating):
             created_rating = await rating_col.find_one({"_id": new_rating.inserted_id})
             return created_rating
 
+
 async def to_df(list_of_docs):
     import pandas as pd
     df = pd.json_normalize(list_of_docs)
     df.drop(['_id'], axis=1, inplace=True)
     return df
+
 
 async def get_all_rating():
     from surprise import Reader, Dataset
@@ -61,9 +90,10 @@ async def get_all_rating():
     cols = df.columns
     df[cols] = df[cols].apply(to_numeric, errors="coerce")
 
-    reader = Reader(rating_scale=(1,5))
+    reader = Reader(rating_scale=(1, 5))
     dataset = Dataset.load_from_df(df[["userId", "movieId", "rating"]], reader=reader)
-    return(dataset)
+    return (dataset)
+
 
 async def load_model(model_filename):
     from surprise import dump
@@ -72,14 +102,14 @@ async def load_model(model_filename):
     _, loaded_model = dump.load(file_name)
     return loaded_model
 
+
 async def movieid_to_name(movieID):
     await motor.connect_db(db_name="movie_predictor")
     movie_col = await motor.get_collection(col_name="movie")
 
-    cursor = movie_col.find({ "movieId" : str(movieID)})
+    cursor = movie_col.find({"movieId": str(movieID)})
     for doc in await cursor.to_list(10):
         return doc["title"]
-
 
 
 async def KNNBasicModel():
@@ -88,21 +118,21 @@ async def KNNBasicModel():
 
     dataset = await get_all_rating()
     trainset = dataset.build_full_trainset()
-    dump.dump("./ai/models/trainset",algo=trainset)
+    dump.dump("./ai/models/trainset", algo=trainset)
 
-    #computing similarity matrix with K Nearest Neighbour algorithm and cosine similarity
-    #we are using item based collaborative filtering hence user_based should be false
+    # computing similarity matrix with K Nearest Neighbour algorithm and cosine similarity
+    # we are using item based collaborative filtering hence user_based should be false
 
     algo = KNNBasic(sim_options={
-        'name':'cosine',
-        'user_based' : False
+        'name': 'cosine',
+        'user_based': False
     }).fit(trainset)
 
     similarity_matrix = algo.compute_similarities()
-    dump.dump("./ai/models/KNNBasicModel",algo=similarity_matrix)
+    dump.dump("./ai/models/KNNBasicModel", algo=similarity_matrix)
+
 
 async def collab_recommend(user_id):
-
     import heapq
     from collections import defaultdict
     from operator import itemgetter
@@ -110,23 +140,23 @@ async def collab_recommend(user_id):
     trainset = await load_model("./ai/models/trainset")
     similarity_matrix = await load_model("./ai/models/KNNBasicModel")
 
-    #calculating by using 20 nearest neighbors
+    # calculating by using 20 nearest neighbors
     k = 20
 
-    #finding the top 20 rated movies by user
+    # finding the top 20 rated movies by user
     test_subject_IID = trainset.to_inner_uid(user_id)
     test_subject_ratings = trainset.ur[test_subject_IID]
-    k_neighbours = heapq.nlargest(k, test_subject_ratings, key= lambda x: x[1])
+    k_neighbours = heapq.nlargest(k, test_subject_ratings, key=lambda x: x[1])
 
-    #will thrwo keyerror if we use a normal dictionary since we cannot search with a non-existent key in a normal dict
-    #finding similarities of each element in k_neighbours and storing them by assigning each of them a score
-    #to improvde the accuracy of the score modifying the default score as score*(rating/5.0) 
+    # will thrwo keyerror if we use a normal dictionary since we cannot search with a non-existent key in a normal dict
+    # finding similarities of each element in k_neighbours and storing them by assigning each of them a score
+    # to improvde the accuracy of the score modifying the default score as score*(rating/5.0)
     candidates = defaultdict(float)
 
-    for itemID , rating in k_neighbours:
+    for itemID, rating in k_neighbours:
         similarities = similarity_matrix[itemID]
         for innerID, score in enumerate(similarities):
-            candidates[innerID] += score*(rating / 5.0)
+            candidates[innerID] += score * (rating / 5.0)
 
     watched = []
     for itemID, rating in trainset.ur[test_subject_IID]:
@@ -135,11 +165,10 @@ async def collab_recommend(user_id):
     recommendation = set()
     position = 0
 
-
-    #candidates have a structure of innerid : score hence we need to sort candidates descending order of score
-    for itemID,_ in sorted(candidates.items(), key=itemgetter(1), reverse=True):
+    # candidates have a structure of innerid : score hence we need to sort candidates descending order of score
+    for itemID, _ in sorted(candidates.items(), key=itemgetter(1), reverse=True):
         if not itemID in watched:
-            recommendation.add( await movieid_to_name(trainset.to_raw_iid(itemID)))
-            position+=1
-            if ( position > 10) : break
+            recommendation.add(await movieid_to_name(trainset.to_raw_iid(itemID)))
+            position += 1
+            if (position > 10): break
     return recommendation
