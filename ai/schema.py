@@ -1,4 +1,5 @@
-from typing import Dict, List
+from datetime import datetime
+from typing import Dict, List, Optional
 
 from bson import ObjectId
 from pydantic import BaseModel, Field
@@ -47,15 +48,14 @@ class Rating(ConfigModel):
         }
 
 
-class Comments(ConfigModel):
-    id: PyObjectId = Field(default_factory=PyObjectId, alias='_id')
+class Comment(BaseModel):
     userId: str = Field(...)
-    timestamp: str = Field(...)
+    timestamp: Optional[datetime] = datetime.now()
     comment: str = Field(...)
 
 
 class Forum(ConfigModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias='_id')
     movieId: str = Field(...)
-    comments: List[Comments] = Field(...)
+    comments: List[Comment] = Field(...)
 

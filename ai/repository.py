@@ -1,5 +1,8 @@
+from datetime import datetime
+from typing import Optional
+
 from fastapi import HTTPException, status
-from pydantic.typing import Optional
+from fastapi.encoders import jsonable_encoder
 
 import ai.schema as AISchema
 from database import MotorDB
@@ -92,6 +95,35 @@ async def add_rating(rating: AISchema.Rating):
             result = await rating_col.replace_one({"_id": rating_exist['_id']}, update_rating)
             updated_doc = await rating_col.find_one({"_id": rating_exist['_id']})
             return updated_doc
+
+
+async def add_comments(comment: AISchema.Comment, movie_id: str):
+    await motor.connect_db(db_name="movie_predictor")
+    forum_col = await motor.get_collection(col_name="forum")
+
+    movie_forum = await forum_col.find_one({"movieId": movie_id})
+    if movie_forum is None:
+        comment = dict(comment)
+        new_comment = AISchema.Comment(userId=comment["userId"], comment=comment["comment"])
+
+        comments = [new_comment.dict()]
+
+        new_forum = AISchema.Forum(movieId=movie_id, comments=comments)
+        new_forum = jsonable_encoder(new_forum)
+
+        inserted_forum = await forum_col.insert_one(new_forum)
+
+        return await forum_col.find_one({"_id": inserted_forum.inserted_id})
+    else:
+        comments = movie_forum["comments"]
+        comment = dict(comment)
+        new_comment = AISchema.Comment(userId=comment["userId"], comment=comment["comment"])
+        comments.append(new_comment.dict())
+
+        updated_forum = await forum_col.update_one({"movieId": movie_id}, {"$set": {"comments": comments}})
+        updated_forum = await forum_col.find_one({"movieId": movie_id})
+
+        return updated_forum
 
 
 async def to_df(list_of_docs):

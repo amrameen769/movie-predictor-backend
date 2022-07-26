@@ -34,3 +34,9 @@ async def collab_recommend(user_id: int):
 @router.get("/get-movie/{movie_id}", status_code=status.HTTP_200_OK, response_model=AISchema.Movie)
 async def get_movie(movie_id: str = Field(...)):
     return await AIRepository.get_movie(movie_id=movie_id)
+
+
+@router.post("/add-comment/{movie_id}", status_code=status.HTTP_201_CREATED)
+async def add_comment(comment: AISchema.Comment = Body(...), movie_id: str = Field(...)):
+    return await AIRepository.add_comments(comment=comment, movie_id=movie_id)
+
