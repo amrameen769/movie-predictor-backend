@@ -1,5 +1,6 @@
 from bson import ObjectId
 from pydantic import BaseModel, EmailStr, Field
+from pydantic.typing import Optional
 
 from database import PyObjectId
 
@@ -9,6 +10,7 @@ class User(BaseModel):
     username: str = Field(...)
     email: EmailStr = Field(...)
     password: str = Field(...)
+    userId: Optional[int]
 
     class Config():
         allow_population_by_field_name = True
@@ -28,6 +30,7 @@ class UserResponse(BaseModel):
     id: str = Field(alias="_id")
     username: str
     email: str
+    userId: int
 
     class Config:
         orm_mode = True

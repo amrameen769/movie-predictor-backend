@@ -13,11 +13,6 @@ class ConfigModel(BaseModel):
         json_encoders = {ObjectId: str}
 
 
-class Lang(ConfigModel):
-    id: PyObjectId = Field(default_factory=PyObjectId, alias="id")
-    language: str = Field(...)
-
-
 class Movie(ConfigModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias='_id')
     movieId: str = Field(...)
@@ -50,3 +45,17 @@ class Rating(ConfigModel):
                 "timestamp": "111111111"
             }
         }
+
+
+class Comments(ConfigModel):
+    id: PyObjectId = Field(default_factory=PyObjectId, alias='_id')
+    userId: str = Field(...)
+    timestamp: str = Field(...)
+    comment: str = Field(...)
+
+
+class Forum(ConfigModel):
+    id: PyObjectId = Field(default_factory=PyObjectId, alias='_id')
+    movieId: str = Field(...)
+    comments: List[Comments] = Field(...)
+

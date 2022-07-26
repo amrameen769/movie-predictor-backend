@@ -1,3 +1,5 @@
+import pprint
+
 from fastapi import HTTPException, status
 
 import user.schema as UserSchema
@@ -30,6 +32,12 @@ async def create_user(user: UserSchema.User):
     if not existing_user:
         user["password"] = hasher.get_hashed_password(user["password"])
         # hashing is only required if new user data is not existing
+        user = dict(user)
+        last_user_id = None
+        users = user_col.find({}).sort("userId", -1).limit(1)
+        for doc in await users.to_list(length=1):
+            last_user_id = doc["userId"]
+        user.update({"userId": last_user_id + 1})
         new_user = await user_col.insert_one(user)
 
         if not new_user:

@@ -50,20 +50,48 @@ async def add_movie(movie: AISchema.Movie):
         )
 
 
+async def get_rating(movie_id: str, user_id: str):
+    await motor.connect_db(db_name="movie_predictor")
+    rating_col = await motor.get_collection(col_name="rating")
+    rating_exist = None
+
+    if rating_col is not None:
+        rating_exist = await rating_col.find_one({
+            "$and": [
+                {"movieId": movie_id},
+                {"userId": user_id}
+            ]
+        })
+
+    return rating_exist
+
+
 async def add_rating(rating: AISchema.Rating):
     await motor.connect_db(db_name="movie_predictor")
     rating_col = await motor.get_collection(col_name="rating")
 
     if rating_col is not None:
-        new_rating = await rating_col.insert_one(rating)
-        if not new_rating:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Rating creation failed"
-            )
+        rating_exist = await get_rating(movie_id=rating["movieId"], user_id=rating["userId"])
+        if rating_exist is None:
+            new_rating = await rating_col.insert_one(rating)
+            if not new_rating:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Rating creation failed"
+                )
+            else:
+                created_rating = await rating_col.find_one({"_id": new_rating.inserted_id})
+                return created_rating
         else:
-            created_rating = await rating_col.find_one({"_id": new_rating.inserted_id})
-            return created_rating
+            update_rating = {
+                "userId": rating["userId"],
+                "movieId": rating["movieId"],
+                "rating": rating["rating"],
+                "timestamp": rating["timestamp"]
+            }
+            result = await rating_col.replace_one({"_id": rating_exist['_id']}, update_rating)
+            updated_doc = await rating_col.find_one({"_id": rating_exist['_id']})
+            return updated_doc
 
 
 async def to_df(list_of_docs):
@@ -171,4 +199,7 @@ async def collab_recommend(user_id):
             recommendation.add(await movieid_to_name(trainset.to_raw_iid(itemID)))
             position += 1
             if (position > 10): break
-    return recommendation
+    return {
+        "userId": user_id,
+        "recommended_movies": recommendation
+    }
