@@ -1,3 +1,4 @@
+import pprint
 from datetime import datetime
 from typing import Optional
 
@@ -113,17 +114,30 @@ async def add_comments(comment: AISchema.Comment, movie_id: str):
 
         inserted_forum = await forum_col.insert_one(new_forum)
 
-        return await forum_col.find_one({"_id": inserted_forum.inserted_id})
+        if inserted_forum:
+            await forum_col.find_one({"_id": inserted_forum.inserted_id})
+            return {
+                "movieId": movie_id,
+                "new_comment": new_comment.dict()
+            }
+        else:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to add comment")
+
     else:
         comments = movie_forum["comments"]
         comment = dict(comment)
         new_comment = AISchema.Comment(userId=comment["userId"], comment=comment["comment"])
-        comments.append(new_comment.dict())
+        new_comment = new_comment.dict()
 
-        updated_forum = await forum_col.update_one({"movieId": movie_id}, {"$set": {"comments": comments}})
-        updated_forum = await forum_col.find_one({"movieId": movie_id})
+        updated_forum = await forum_col.update_one({"movieId": movie_id}, {"$push": {"comments": new_comment}})
 
-        return updated_forum
+        if updated_forum.modified_count > 0:
+            return {
+                "movieId": movie_id,
+                "new_comment": new_comment
+            }
+        else:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to add comment")
 
 
 async def to_df(list_of_docs):
