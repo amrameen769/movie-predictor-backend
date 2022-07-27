@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 import requests
 from config import settings
@@ -79,6 +80,8 @@ async def add_rating(rating: AISchema.Rating):
     await motor.connect_db(db_name="movie_predictor")
     rating_col = await motor.get_collection(col_name="rating")
 
+    rating = jsonable_encoder(rating)
+
     if rating_col is not None:
         rating_exist = await get_rating(movie_id=rating["movieId"], user_id=rating["userId"])
         if rating_exist is None:
@@ -96,7 +99,7 @@ async def add_rating(rating: AISchema.Rating):
                 "userId": rating["userId"],
                 "movieId": rating["movieId"],
                 "rating": rating["rating"],
-                "timestamp": rating["timestamp"]
+                "timestamp": datetime.now()
             }
             result = await rating_col.replace_one({"_id": rating_exist['_id']}, update_rating)
             updated_doc = await rating_col.find_one({"_id": rating_exist['_id']})
@@ -252,11 +255,15 @@ async def collab_recommend(user_id):
             if (position > 10): break
 
     recommendation_response = []
+    recommendation_ratings = []
 
     for movie in recommendation:
         recommendation_response.append(await get_movie(movie_id=movie["movieId"]))
+        recommendation_ratings.append(await get_rating(movie_id=movie["movieId"], user_id=str(user_id)))
+
 
     return {
         "userId": user_id,
-        "recommended_movies": recommendation_response
+        "recommended_movies": recommendation_response,
+        "ratings": recommendation_ratings
     }

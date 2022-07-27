@@ -31,11 +31,11 @@ class Movie(ConfigModel):
 
 
 class Rating(ConfigModel):
-    id: int = Field(alias='_id')
+    id: PyObjectId = Field(default_factory=PyObjectId, alias='_id')
     userId: str = Field(...)
     movieId: str = Field(...)
     rating: str = Field(...)
-    timestamp: str = Field(...)
+    timestamp: Optional[datetime] = datetime.now()
 
     class Config:
         schema_extra = {
