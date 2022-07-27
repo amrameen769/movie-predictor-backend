@@ -1,6 +1,6 @@
-import pprint
-from datetime import datetime
 from typing import Optional
+import requests
+from config import settings
 
 from fastapi import HTTPException, status
 from fastapi.encoders import jsonable_encoder
@@ -19,6 +19,11 @@ async def get_movie(movie_id: Optional[str] = None, title: Optional[str] = None)
     if movie_id is not None:
         movie = await movie_col.find_one({"movieId": movie_id})
         if movie is not None:
+            api_url = settings.TMDB_URL + "movie/" + movie["tmdbId"] + "?api_key=" + settings.TMDB_API_KEY
+            response = requests.get(api_url)
+            movie.update({
+                "movieDetails": response.json()
+            })
             return movie
 
     if title is not None:
@@ -183,7 +188,7 @@ async def movieid_to_name(movieID):
 
     cursor = movie_col.find({"movieId": str(movieID)})
     for doc in await cursor.to_list(10):
-        return doc["title"]
+        return doc
 
 
 async def KNNBasicModel():
@@ -236,16 +241,22 @@ async def collab_recommend(user_id):
     for itemID, rating in trainset.ur[test_subject_IID]:
         watched.append(itemID)
 
-    recommendation = set()
+    recommendation = []
     position = 0
 
     # candidates have a structure of innerid : score hence we need to sort candidates descending order of score
     for itemID, _ in sorted(candidates.items(), key=itemgetter(1), reverse=True):
         if not itemID in watched:
-            recommendation.add(await movieid_to_name(trainset.to_raw_iid(itemID)))
+            recommendation.append(await movieid_to_name(trainset.to_raw_iid(itemID)))
             position += 1
             if (position > 10): break
+
+    recommendation_response = []
+
+    for movie in recommendation:
+        recommendation_response.append(await get_movie(movie_id=movie["movieId"]))
+
     return {
         "userId": user_id,
-        "recommended_movies": recommendation
+        "recommended_movies": recommendation_response
     }

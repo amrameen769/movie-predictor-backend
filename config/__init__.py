@@ -6,6 +6,9 @@ from pydantic import BaseSettings
 class CommonSettings(BaseSettings):
     APP_NAME: str = "movie-predictor"
     DEBUG_MODE: bool = True
+    TMDB_API_KEY: str = "530b3153e618c6d1440995db2f00744a"
+    TMDB_URL: str = "https://api.themoviedb.org/3/"
+
 
 
 class ServerSettings(BaseSettings):
