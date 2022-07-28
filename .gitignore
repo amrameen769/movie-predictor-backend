@@ -132,5 +132,5 @@ dmypy.json
 .pyre/
 
 # Model
-ai/models/*
-conda-movie-predictor-backend/
+ai/models/KNNBasicModel
+ai/models/trainset

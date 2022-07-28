@@ -5,7 +5,7 @@
       <excludeFolder url="file://$MODULE_DIR$/.env" />
       <excludeFolder url="file://$MODULE_DIR$/conda-movie-predictor-backend" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.10 (movie-predictor-backend) (2)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.10 (movie-predictor-backend)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PackageRequirementsSettings">
