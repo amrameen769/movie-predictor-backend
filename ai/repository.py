@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 import requests
 from config import settings
 
@@ -74,6 +74,63 @@ async def get_rating(movie_id: str, user_id: str):
         })
 
     return rating_exist
+
+
+async def get_users_rating_all(user_id: str):
+    await motor.connect_db(db_name="movie_predictor")
+    rating_col = await motor.get_collection(col_name="rating")
+    if rating_col is not None:
+        rating_count = await rating_col.count_documents({"userId": user_id})
+        return rating_count
+
+
+async def add_user_preferences(user_id: str, preferences: List[str]):
+    await motor.connect_db(db_name="movie_predictor")
+    preferences_col = await motor.get_collection(col_name="preferences")
+
+    existing_pref = await preferences_col.find_one({"userId": user_id})
+    if existing_pref is not None:
+        if existing_pref["preferences"] == preferences:
+            return existing_pref
+        else:
+            new_preference = {
+                "userId": user_id,
+                "preferences": preferences
+            }
+            result = await preferences_col.replace_one({"_id": existing_pref["_id"]}, new_preference)
+            updated_preference = await preferences_col.find_one({"userId": user_id})
+            return updated_preference
+    else:
+        if preferences_col is not None:
+            # new_preference = {
+            #     "userId": user_id,
+            #     "preferences": preferences
+            # }
+
+            new_preference = AISchema.Preferences(userId=user_id, preferences=preferences)
+            new_preference = jsonable_encoder(new_preference)
+            result = await preferences_col.insert_one(new_preference)
+
+            if not result:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Preference creation failed"
+                )
+            else:
+                created_preference = await preferences_col.find_one({"userId": user_id})
+                return created_preference
+
+
+async def get_user_preferences(user_id: str):
+    await motor.connect_db(db_name="movie_predictor")
+    preferences_col = await motor.get_collection(col_name="preferences")
+    preferences = await preferences_col.find_one({"userId": user_id})
+    if not preferences:
+        return {
+            "preferences": []
+        }
+    else:
+        return preferences
 
 
 async def add_rating(rating: AISchema.Rating):
@@ -256,14 +313,17 @@ async def collab_recommend(user_id):
 
     recommendation_response = []
     recommendation_ratings = []
+    rating_counts = await get_users_rating_all(user_id=str(user_id))
+    preferences = await get_user_preferences(user_id=str(user_id))
 
     for movie in recommendation:
         recommendation_response.append(await get_movie(movie_id=movie["movieId"]))
         recommendation_ratings.append(await get_rating(movie_id=movie["movieId"], user_id=str(user_id)))
 
-
     return {
         "userId": user_id,
         "recommended_movies": recommendation_response,
-        "ratings": recommendation_ratings
+        "ratings": recommendation_ratings,
+        "rating_counts": rating_counts,
+        "preferences": preferences,
     }

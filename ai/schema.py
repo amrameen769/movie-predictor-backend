@@ -59,3 +59,10 @@ class Forum(ConfigModel):
     movieId: str = Field(...)
     comments: List[Comment] = Field(...)
 
+
+class Preferences(ConfigModel):
+    id: PyObjectId = Field(default_factory=PyObjectId, alias='_id')
+    userId: str = Field(...)
+    preferences: List[str] = Field(...)
+
+
