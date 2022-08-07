@@ -72,6 +72,12 @@ async def get_rating(movie_id: str, user_id: str):
                 {"userId": user_id}
             ]
         })
+        if rating_exist is None:
+            rating_exist = {
+                "movieId": movie_id,
+                "userId": user_id,
+                "rating": 0
+            }
 
     return rating_exist
 
@@ -141,7 +147,7 @@ async def add_rating(rating: AISchema.Rating):
 
     if rating_col is not None:
         rating_exist = await get_rating(movie_id=rating["movieId"], user_id=rating["userId"])
-        if rating_exist is None:
+        if rating_exist["rating"] is 0:
             new_rating = await rating_col.insert_one(rating)
             if not new_rating:
                 raise HTTPException(
