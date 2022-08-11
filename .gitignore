@@ -135,3 +135,4 @@ dmypy.json
 ai/models/KNNBasicModel
 ai/models/trainset
 ai/models/ContentBasedModel
+ai/models/genre_df
