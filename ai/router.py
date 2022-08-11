@@ -43,6 +43,11 @@ async def add_comment(comment: AISchema.Comment = Body(...), movie_id: str = Fie
     return await AIRepository.add_comments(comment=comment, movie_id=movie_id)
 
 
+@router.get("/get-comments/{movie_id}", status_code=status.HTTP_200_OK)
+async def get_comments(movie_id: str = Field(...)):
+    return await AIRepository.get_comments(movie_id=movie_id)
+
+
 @router.get("/get-all-user-rating/{user_id}", status_code=status.HTTP_200_OK)
 async def get_all_user_rating(user_id: str = Field(...)):
     return await AIRepository.get_users_rating_all(user_id)
