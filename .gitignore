@@ -134,3 +134,4 @@ dmypy.json
 # Model
 ai/models/KNNBasicModel
 ai/models/trainset
+ai/models/ContentBasedModel

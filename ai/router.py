@@ -61,3 +61,7 @@ async def update_watchlist(user_id: str = Field(...), movie_ids: List[str] = Bod
 @router.get("/get-watchlist/{user_id}", status_code=status.HTTP_200_OK)
 async def update_watchlist(user_id: str = Field(...)):
     return await AIRepository.get_watchlist(user_id=user_id)
+
+@router.get("/content-recommend", status_code=status.HTTP_200_OK)
+async def contend_recommend(genres: list):
+    return await AIRepository.contend_recommend(genres)

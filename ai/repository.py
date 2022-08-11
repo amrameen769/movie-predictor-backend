@@ -9,6 +9,9 @@ import ai.schema as AISchema
 from config import settings
 from database import MotorDB
 
+import pandas as pd
+
+
 motor = MotorDB()
 
 
@@ -286,7 +289,7 @@ async def movieid_to_name(movieID):
     for doc in await cursor.to_list(10):
         return doc
 
-
+#collaborative model
 async def KNNBasicModel():
     from surprise import KNNBasic
     from surprise import dump
@@ -363,3 +366,96 @@ async def collab_recommend(user_id):
         "rating_counts": rating_counts,
         "preferences": preferences,
     }
+
+async def create_df():
+    from pandas import to_numeric
+
+    rating_arr = []
+    movies_arr = []
+
+    await motor.connect_db(db_name="movie_predictor")
+    movie = await motor.get_collection(col_name="movie")
+    ratings = await motor.get_collection(col_name="rating")
+
+    size_r = await ratings.count_documents({})
+    size_m = await movie.count_documents({})
+
+    #get ratings from database and store it in a list
+    cursor = ratings.find({})
+    for document in await cursor.to_list(length=size_r): #change size in server
+        rating_arr.append(document)
+    
+    #get movies from database and store it in a list
+    cursor = movie.find({})
+    for document in await cursor.to_list(length=size_m): #change size in server
+        movies_arr.append(document)
+
+    df_r = pd.json_normalize(rating_arr)
+    df_m = pd.json_normalize(movies_arr)
+
+    df_r.drop(['_id'], axis=1, inplace=True)
+    df_r.drop(['timestamp'], axis=1, inplace=True)
+    df_m.drop(['_id'], axis=1, inplace=True)
+    
+    df_r['rating'] = df_r['rating'].apply(to_numeric, errors="coerce")
+    #creating dataframe for user ratings
+    rating=df_r.groupby(df_r['movieId']).mean()
+
+    #removing special charecters from columns
+    df_m['genres']=df_m['genres'].str.join(' ')
+    df_m['genres']=df_m['genres'].str.lower()
+
+    #merging df and rating to get rating data
+    df_new=df_m.merge(rating,on='movieId',how='left')
+
+    #sorting movies by rating
+    df_genere=df_new.sort_values(by='rating',ascending=False)
+
+    return df_genere
+
+async def create_model_content():
+    from sklearn.metrics.pairwise import cosine_similarity
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from surprise import dump
+
+    df = await create_df()
+    tfidf=TfidfVectorizer()
+    features=tfidf.fit_transform(df["genres"])
+    #cosine similarity matrix
+    sim_matrix=cosine_similarity(features,features)
+    dump.dump("./ai/models/ContentBasedModel",algo=sim_matrix)
+
+async def get_movie(genere_string):
+    df = await create_df()
+    for _, row in df.iterrows():
+        if genere_string in row['genres']:
+            return row['title']
+
+async def contend_recommend(genre):
+    movie_list=[]
+    #index of movie
+    genres = ' '.join(genre)
+    title = await get_movie(genres)
+    df = await create_df()
+    movie_name=pd.Series(df['title'])
+    index=movie_name[movie_name==title].index[0]
+    #sorting similarity matrix on the basis of index
+    sim_matrix = load_model("./ai/models/ContentBasedModel")
+    score=pd.Series(sim_matrix[index]).sort_values(ascending=False)
+    top_50=set(score.iloc[1:50].index)
+    count=0
+    for i in top_50:
+        if(count>=10):
+            break
+        else:
+            if(df['rating'][i]>3.5):
+                movie_det = {
+                    "title": df["title"][i],
+                    "rating": df["rating"][i],
+                    "movieId": df["movieId"][i],
+                    "genres": df["genres"][i]
+                }
+                movie_list.append(movie_det)
+                count+=1
+            
+    return movie_list
