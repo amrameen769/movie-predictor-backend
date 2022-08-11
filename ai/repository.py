@@ -211,6 +211,34 @@ async def add_comments(comment: AISchema.Comment, movie_id: str):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to add comment")
 
 
+async def get_username(user_id: str):
+    await motor.connect_db(db_name="movie_predictor")
+    user_col = await motor.get_collection(col_name="user")
+
+    user = await user_col.find_one({"userId": int(user_id)})
+    return user["username"]
+
+
+async def get_comments(movie_id: str):
+    await motor.connect_db(db_name="movie_predictor")
+    forum_col = await motor.get_collection(col_name="forum")
+    comments = await forum_col.find_one({"movieId": movie_id})
+
+    updated_comments = []
+    for comment in comments["comments"]:
+        updated_comments.append({
+            **comment,
+            "username": await get_username(comment["userId"])
+        })
+
+    comments = {
+        **comments,
+        "comments": updated_comments
+    }
+
+    return comments
+
+
 async def add_to_watchlist(user_id: str, movie_ids: List[str]):
     await motor.connect_db(db_name="movie_predictor")
     watchlist_col = await motor.get_collection(col_name="watchlists")
