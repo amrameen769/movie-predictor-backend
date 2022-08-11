@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import Optional, List
-import requests
-from config import settings
 
+import requests
 from fastapi import HTTPException, status
 from fastapi.encoders import jsonable_encoder
 
 import ai.schema as AISchema
+from config import settings
 from database import MotorDB
 
 motor = MotorDB()
@@ -147,7 +147,7 @@ async def add_rating(rating: AISchema.Rating):
 
     if rating_col is not None:
         rating_exist = await get_rating(movie_id=rating["movieId"], user_id=rating["userId"])
-        if rating_exist["rating"] is 0:
+        if rating_exist["rating"] == 0:
             new_rating = await rating_col.insert_one(rating)
             if not new_rating:
                 raise HTTPException(
@@ -210,6 +210,36 @@ async def add_comments(comment: AISchema.Comment, movie_id: str):
         else:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to add comment")
 
+
+async def add_to_watchlist(user_id: str, movie_ids: List[str]):
+    await motor.connect_db(db_name="movie_predictor")
+    watchlist_col = await motor.get_collection(col_name="watchlists")
+
+    result = await watchlist_col.replace_one({"userId": user_id}, {"movieIds": movie_ids, "userId": user_id},
+                                             upsert=True)
+
+    if result.modified_count > 0 or result.upserted_id:
+        return {
+            "movieIds": movie_ids,
+            "userId": user_id,
+            "status": "Updated"
+        }
+
+
+async def get_watchlist(user_id: str):
+    await motor.connect_db(db_name="movie_predictor")
+    watchlist_col = await motor.get_collection(col_name="watchlists")
+
+    result = await watchlist_col.find_one({"userId": user_id})
+    watchlist = []
+    if result is not None:
+        for movie_id in result["movieIds"]:
+            watchlist.append(await get_movie(movie_id=movie_id))
+
+    return watchlist
+
+
+# AI Algorithms
 
 async def to_df(list_of_docs):
     import pandas as pd

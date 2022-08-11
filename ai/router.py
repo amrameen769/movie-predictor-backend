@@ -51,3 +51,13 @@ async def get_all_user_rating(user_id: str = Field(...)):
 @router.post("/add-user-preferences/{user_id}", status_code=status.HTTP_201_CREATED)
 async def add_user_preferences(user_id: str = Field(...), preferences: List[str] = Body(...)):
     return await AIRepository.add_user_preferences(user_id=user_id, preferences=preferences)
+
+
+@router.post("/update-watchlist/{user_id}", status_code=status.HTTP_201_CREATED)
+async def update_watchlist(user_id: str = Field(...), movie_ids: List[str] = Body(...)):
+    return await AIRepository.add_to_watchlist(user_id=user_id, movie_ids=movie_ids)
+
+
+@router.get("/get-watchlist/{user_id}", status_code=status.HTTP_200_OK)
+async def update_watchlist(user_id: str = Field(...)):
+    return await AIRepository.get_watchlist(user_id=user_id)
