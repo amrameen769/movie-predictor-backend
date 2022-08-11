@@ -1,4 +1,3 @@
-import pprint
 from datetime import datetime
 from typing import Optional, List
 
@@ -225,8 +224,6 @@ async def get_comments(movie_id: str):
     await motor.connect_db(db_name="movie_predictor")
     forum_col = await motor.get_collection(col_name="forum")
     comments = await forum_col.find_one({"movieId": movie_id})
-
-    print(comments)
 
     if comments:
         updated_comments = []
