@@ -1,6 +1,8 @@
+import pprint
 from datetime import datetime
 from typing import Optional, List
 
+import pandas as pd
 import requests
 from fastapi import HTTPException, status
 from fastapi.encoders import jsonable_encoder
@@ -278,15 +280,16 @@ async def load_model(model_filename):
     return loaded_model
 
 
-async def movieid_to_name(movieID):
+async def movieid_to_name(movie_id):
     await motor.connect_db(db_name="movie_predictor")
     movie_col = await motor.get_collection(col_name="movie")
 
-    cursor = movie_col.find({"movieId": str(movieID)})
+    cursor = movie_col.find({"movieId": str(movie_id)})
     for doc in await cursor.to_list(10):
         return doc
 
 
+# collaborative model
 async def KNNBasicModel():
     from surprise import KNNBasic
     from surprise import dump
@@ -319,13 +322,13 @@ async def collab_recommend(user_id):
     k = 20
 
     # finding the top 20 rated movies by user
-    test_subject_IID = trainset.to_inner_uid(user_id)
-    test_subject_ratings = trainset.ur[test_subject_IID]
+    test_subject_iid = trainset.to_inner_uid(user_id)
+    test_subject_ratings = trainset.ur[test_subject_iid]
     k_neighbours = heapq.nlargest(k, test_subject_ratings, key=lambda x: x[1])
 
-    # will thrwo keyerror if we use a normal dictionary since we cannot search with a non-existent key in a normal dict
+    # will throw key error if we use a normal dictionary since we cannot search with a non-existent key in a normal dict
     # finding similarities of each element in k_neighbours and storing them by assigning each of them a score
-    # to improvde the accuracy of the score modifying the default score as score*(rating/5.0)
+    # to improve the accuracy of the score modifying the default score as score*(rating/5.0)
     candidates = defaultdict(float)
 
     for itemID, rating in k_neighbours:
@@ -334,7 +337,7 @@ async def collab_recommend(user_id):
             candidates[innerID] += score * (rating / 5.0)
 
     watched = []
-    for itemID, rating in trainset.ur[test_subject_IID]:
+    for itemID, rating in trainset.ur[test_subject_iid]:
         watched.append(itemID)
 
     recommendation = []
@@ -342,10 +345,11 @@ async def collab_recommend(user_id):
 
     # candidates have a structure of innerid : score hence we need to sort candidates descending order of score
     for itemID, _ in sorted(candidates.items(), key=itemgetter(1), reverse=True):
-        if not itemID in watched:
+        if itemID not in watched:
             recommendation.append(await movieid_to_name(trainset.to_raw_iid(itemID)))
             position += 1
-            if (position > 10): break
+            if position > 10:
+                break
 
     recommendation_response = []
     recommendation_ratings = []
@@ -362,4 +366,116 @@ async def collab_recommend(user_id):
         "ratings": recommendation_ratings,
         "rating_counts": rating_counts,
         "preferences": preferences,
+    }
+
+
+async def create_df():
+    from pandas import to_numeric
+    from surprise import dump
+
+    rating_arr = []
+    movies_arr = []
+
+    await motor.connect_db(db_name="movie_predictor")
+    movie = await motor.get_collection(col_name="movie")
+    ratings = await motor.get_collection(col_name="rating")
+
+    size_r = await ratings.count_documents({})
+    size_m = await movie.count_documents({})
+
+    # get ratings from database and store it in a list
+    cursor = ratings.find({})
+    for document in await cursor.to_list(length=size_r):  # change size in server
+        rating_arr.append(document)
+
+    # get movies from database and store it in a list
+    cursor = movie.find({})
+    for document in await cursor.to_list(length=size_m):  # change size in server
+        movies_arr.append(document)
+
+    df_r = pd.json_normalize(rating_arr)
+    df_m = pd.json_normalize(movies_arr)
+
+    df_r.drop(['_id'], axis=1, inplace=True)
+    df_r.drop(['timestamp'], axis=1, inplace=True)
+    df_m.drop(['_id'], axis=1, inplace=True)
+
+    df_r['rating'] = df_r['rating'].apply(to_numeric, errors="coerce")
+    # creating dataframe for user ratings
+    rating = df_r.groupby(df_r['movieId']).mean()
+
+    # removing special characters from columns
+    df_m['genres'] = df_m['genres'].str.join(' ')
+    df_m['genres'] = df_m['genres'].str.lower()
+
+    # merging df and rating to get rating data
+    df_new = df_m.merge(rating, on='movieId', how='left')
+
+    # sorting movies by rating
+    df_genre = df_new.sort_values(by='rating', ascending=False)
+
+    dump.dump("./ai/models/genre_df", algo=df_genre)
+
+
+async def create_model_content():
+    from sklearn.metrics.pairwise import cosine_similarity
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from surprise import dump
+
+    df = await load_model("./ai/models/genre_df")
+    tfidf = TfidfVectorizer()
+    features = tfidf.fit_transform(df["genres"])
+    # cosine similarity matrix
+    sim_matrix = cosine_similarity(features, features)
+    dump.dump("./ai/models/ContentBasedModel", algo=sim_matrix)
+
+
+async def get_movie_by_genre(genre_string):
+    df = await load_model("./ai/models/genre_df")
+    genre_list = genre_string.split(" ")
+    df_genre_count = {}
+    for _, row in df.iterrows():
+        df_genre_list = row['genres'].split(" ")
+        match_list = [genre for genre in genre_list if genre in df_genre_list]
+        df_genre_count[row["title"]] = len(match_list)
+
+    min_diff_movie = max(df_genre_count, key=df_genre_count.get)
+    return min_diff_movie
+
+
+async def content_recommend(genres, user_id):
+    movie_list = []
+    # index of movie
+    # genres = ' '.join(genre)
+    title = await get_movie_by_genre(genres)
+    df = await load_model("./ai/models/genre_df")
+    movie_name = pd.Series(df['title'])
+    index = movie_name[movie_name == title].index[0]
+    # sorting similarity matrix on the basis of index
+    sim_matrix = await load_model("./ai/models/ContentBasedModel")
+    score = pd.Series(sim_matrix[index]).sort_values(ascending=False)
+    top_50 = set(score.iloc[1:50].index)
+    count = 0
+    for i in top_50:
+        if count >= 11:
+            break
+        else:
+            if df['rating'][i] > 3.5:
+                movie_det = {
+                    "movieId": df["movieId"][i],
+                    "genres": df["genres"][i]
+                }
+                movie_list.append(movie_det)
+                count += 1
+
+    recommendation_response = []
+    recommendation_ratings = []
+    for movie in movie_list:
+        recommendation_response.append(await get_movie(movie_id=movie["movieId"]))
+        recommendation_ratings.append(await get_rating(movie_id=movie["movieId"], user_id=str(user_id)))
+
+    return {
+        "userId": user_id,
+        "recommended_movies": recommendation_response,
+        "ratings": recommendation_ratings,
     }

@@ -43,6 +43,15 @@ import ai.repository as ai_repository
 # async def KNNBasicModel():
 #     await ai_repository.KNNBasicModel()
 #
+# @app.on_event("startup")
+# async def create_model_content():
+#     await ai_repository.create_df()
+#     await ai_repository.create_model_content()
+
+
+# @repeat_every(seconds=30 * 24 * 60 * 60)
+# async def create_model_content():
+#     await ai_repository.create_model_content()
 
 if __name__ == "__main__":
     uvicorn.run(
