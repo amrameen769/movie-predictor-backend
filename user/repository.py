@@ -33,7 +33,7 @@ async def create_user(user: UserSchema.User):
         user["password"] = hasher.get_hashed_password(user["password"])
         # hashing is only required if new user data is not existing
         user = dict(user)
-        last_user_id = None
+        last_user_id = 0
         users = user_col.find({}).sort("userId", -1).limit(1)
         for doc in await users.to_list(length=1):
             last_user_id = doc["userId"]
