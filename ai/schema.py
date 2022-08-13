@@ -50,7 +50,7 @@ class Rating(ConfigModel):
 
 class Comment(BaseModel):
     userId: str = Field(...)
-    timestamp: Optional[datetime] = datetime.now()
+    timestamp: str
     comment: str = Field(...)
 
 

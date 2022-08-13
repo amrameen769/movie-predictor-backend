@@ -177,7 +177,7 @@ async def add_comments(comment: AISchema.Comment, movie_id: str):
     movie_forum = await forum_col.find_one({"movieId": movie_id})
     if movie_forum is None:
         comment = dict(comment)
-        new_comment = AISchema.Comment(userId=comment["userId"], comment=comment["comment"])
+        new_comment = AISchema.Comment(userId=comment["userId"], comment=comment["comment"], timestamp=comment["timestamp"])
 
         comments = [new_comment.dict()]
 
@@ -198,7 +198,7 @@ async def add_comments(comment: AISchema.Comment, movie_id: str):
     else:
         comments = movie_forum["comments"]
         comment = dict(comment)
-        new_comment = AISchema.Comment(userId=comment["userId"], comment=comment["comment"])
+        new_comment = AISchema.Comment(userId=comment["userId"], comment=comment["comment"], timestamp=comment["timestamp"])
         new_comment = new_comment.dict()
 
         updated_forum = await forum_col.update_one({"movieId": movie_id}, {"$push": {"comments": new_comment}})
