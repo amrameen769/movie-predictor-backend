@@ -58,6 +58,11 @@ async def add_user_preferences(user_id: str = Field(...), preferences: List[str]
     return await AIRepository.add_user_preferences(user_id=user_id, preferences=preferences)
 
 
+@router.get("/get-preferences", status_code=status.HTTP_200_OK)
+async def update_watchlist(current_user: UserSchema.UserResponse = Depends(get_current_user)):
+    return await AIRepository.get_user_preferences(current_user["userId"])
+
+
 @router.post("/update-watchlist/{user_id}", status_code=status.HTTP_201_CREATED)
 async def update_watchlist(user_id: str = Field(...), movie_ids: List[str] = Body(...)):
     return await AIRepository.add_to_watchlist(user_id=user_id, movie_ids=movie_ids)

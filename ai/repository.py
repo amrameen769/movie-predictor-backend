@@ -1,3 +1,4 @@
+import pprint
 from datetime import datetime
 from typing import Optional, List
 
@@ -128,10 +129,10 @@ async def add_user_preferences(user_id: str, preferences: List[str]):
                 return created_preference
 
 
-async def get_user_preferences(user_id: str):
+async def get_user_preferences(user_id):
     await motor.connect_db(db_name="movie_predictor")
     preferences_col = await motor.get_collection(col_name="preferences")
-    preferences = await preferences_col.find_one({"userId": user_id})
+    preferences = await preferences_col.find_one({"userId": str(user_id)})
     if not preferences:
         return {
             "preferences": []
@@ -384,7 +385,7 @@ async def collab_recommend(user_id):
     recommendation_response = []
     recommendation_ratings = []
     rating_counts = await get_users_rating_all(user_id=str(user_id))
-    preferences = await get_user_preferences(user_id=str(user_id))
+    # preferences = await get_user_preferences(user_id=str(user_id))
 
     for movie in recommendation:
         recommendation_response.append(await get_movie(movie_id=movie["movieId"]))
@@ -395,7 +396,6 @@ async def collab_recommend(user_id):
         "recommended_movies": recommendation_response,
         "ratings": recommendation_ratings,
         "rating_counts": rating_counts,
-        "preferences": preferences,
     }
 
 
