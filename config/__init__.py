@@ -6,7 +6,7 @@ from pydantic import BaseSettings
 class CommonSettings(BaseSettings):
     APP_NAME: str = "movie-predictor"
     DEBUG_MODE: bool = True
-    TMDB_API_KEY: str = "530b3153e618c6d1440995db2f00744a"
+    TMDB_API_KEY: str = "ab67ab4af7ffc1d61ffde001fbdfbe2c"
     TMDB_URL: str = "https://api.themoviedb.org/3/"
 
 
@@ -17,15 +17,13 @@ class ServerSettings(BaseSettings):
     ORIGINS: List[str] = [
         "https://127.0.0.1:3000",
         "http://127.0.0.1:3000",
-        "http://192.168.1.39",
         "http://localhost:3000"
     ]
 
 
 class DatabaseSettings(BaseSettings):
-    CLUSTER_URL: str = "mongodb://192.168.1.66:27017/"  # added remote host
-    # CLUSTER_URL: str = "mongodb://localhost:27017/"
-    # CLUSTER_URL: str = "mongodb+srv://amrorg333:amrorg333@test-cluster0.ue7ubri.mongodb.net/test"
+    # CLUSTER_URL: str = "mongodb://192.168.1.66:27017/"  # added remote host
+    CLUSTER_URL: str = "mongodb://localhost:27017/"
     DB_PREFIX: str = "db_mp_"
     COL_PREFIX: str = "col_mp_"
 

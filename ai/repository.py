@@ -218,7 +218,7 @@ async def get_username(user_id: str):
     user_col = await motor.get_collection(col_name="user")
 
     user = await user_col.find_one({"userId": int(user_id)})
-    return user["username"]
+    return user["username"] if user else None
 
 
 async def get_comments(movie_id: str):
@@ -229,9 +229,10 @@ async def get_comments(movie_id: str):
     if comments:
         updated_comments = []
         for comment in comments["comments"]:
+            username = await get_username(comment["userId"])
             updated_comments.append({
                 **comment,
-                "username": await get_username(comment["userId"])
+                "username": username
             })
 
         comments = {

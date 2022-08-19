@@ -31,19 +31,20 @@ app.include_router(auth_router)
 app.include_router(ai_router)
 
 # import ai.repository as ai_repository
-#
+# from fastapi_utils.tasks import repeat_every
+
 # @app.on_event("startup")
 # async def startup_task():
 #     await ai_repository.KNNBasicModel()
 #     await ai_repository.create_df()
 #     await ai_repository.create_model_content()
-#
-#
+
+
 # @repeat_every(seconds=30 * 24 * 60 * 60)
 # async def repeat_tasks():
 #     await ai_repository.KNNBasicModel()
 #     await ai_repository.create_model_content()
-#
+# #
 
 if __name__ == "__main__":
     uvicorn.run(
