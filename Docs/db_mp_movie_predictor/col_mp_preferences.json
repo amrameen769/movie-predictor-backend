@@ -1,0 +1,75 @@
+[{
+  "_id": "62e26fda5ce95f2dd78d5003",
+  "userId": "11",
+  "preferences": [
+    "Horror",
+    "Action",
+    "War"
+  ]
+},{
+  "_id": "62e2713b5ce95f2dd78d500b",
+  "userId": "8",
+  "preferences": [
+    "Adventure",
+    "Horror"
+  ]
+},{
+  "_id": "62e2bc3b3c8fa0879d45fc7a",
+  "userId": "16",
+  "preferences": [
+    "Horror",
+    "Thriller",
+    "Funny"
+  ]
+},{
+  "_id": "62f4be08af74ec29b4499bc6",
+  "userId": "17",
+  "preferences": [
+    "Funny",
+    "Thriller",
+    "Horror",
+    "Musical",
+    "Crime"
+  ]
+},{
+  "_id": "62f5088d52e7a2b4e05803f8",
+  "userId": "10",
+  "preferences": [
+    "Funny",
+    "Thriller",
+    "War",
+    "Sci-Fi",
+    "Action",
+    "Fantasy"
+  ]
+},{
+  "_id": "62f55e36299dc0f65eb01f95",
+  "userId": "18",
+  "preferences": [
+    "Fantasy",
+    "Horror"
+  ]
+},{
+  "_id": "62f57c935fef4e1fabd142ec",
+  "userId": "9",
+  "preferences": [
+    "Thriller",
+    "Horror",
+    "Crime",
+    "Musical"
+  ]
+},{
+  "_id": "62f6dcfae0734fd7809f14af",
+  "userId": "1",
+  "preferences": [
+    "Action"
+  ]
+},{
+  "_id": "62fa3ef9d457efdc2e9c2144",
+  "userId": "2",
+  "preferences": [
+    "Action",
+    "Horror",
+    "Fantasy"
+  ]
+}]
